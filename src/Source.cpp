@@ -19,6 +19,7 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
 "}\0";
 
+bool wireFrame = false;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -105,23 +106,32 @@ int main()
 	glDeleteShader(fragShader); // DELETE FRAG SHADER
 
 
-	// ----------- VERTEX BUFFER & VERTEX ARRAY ----------------
-	//VERTEX DATA
+	// ----------- VERTEX & ELEMENT BUFFER, VERTEX ARRAY ----------------
+	//MESH DATA
 	float vertices[] =
 	{
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
+		 0.5f,  0.5f, 0.0f, //top right
+		 0.5f, -0.5f, 0.0f, //top left
+		-0.5f, -0.5f, 0.0f, //bottom right
+		-0.5f,  0.5f, 0.0f  //bottom left
 	};
-	unsigned int VBO;
-	unsigned int VAO;
-	glGenBuffers(1, &VBO); //CREATE AN OPENGL VERTEX BUFFER OBJECT
+	unsigned int indices[] =
+	{
+		0,1,2,
+		2,3,0
+	};
+	unsigned int VBO, EBO, VAO;
 	glGenVertexArrays(1, &VAO); //CREATE A VERTEX ARRAY OBJECT
+	glGenBuffers(1, &VBO); //CREATE A VERTEX BUFFER OBJECT
+	glGenBuffers(1, &EBO); //CREATE ELEMENT BUFFER
 
 	glBindVertexArray(VAO); //BIND VERTEX ARRAY (BEFORE BINDING VERT BUFFER!)
+	//BIND VBO INTO MEMORY
 	glBindBuffer(GL_ARRAY_BUFFER, VBO); //SPECIFY OBJECT TYPE (Vertex Buffer)
-
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //COPY VERTEX DATA TO VBO
+	//BIND EBO INTO MEMORY
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); //SPECIFY OBJECT TYPE (ELEMENT Buffer)	
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); //COPY INDEX DATA TO EBO
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); //SPECIFY TO OPENGL HOW TO INTERPRET VERTEX DATA
 	glEnableVertexAttribArray(0);
@@ -142,7 +152,7 @@ int main()
 		//DRAW
 		glUseProgram(shaderProgram); //SPECIFY SHADERS TO USE
 		glBindVertexArray(VAO); //BIND VAO (HAS PTR TO VBO DATA IN IT)
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		//POLL EVENTS, SWAP BUFFERS
 		glfwPollEvents();
@@ -154,10 +164,25 @@ int main()
 	return 0;
 }
 
+float delay = 10;
 void processInput(GLFWwindow* window)
 {
+	delay--;
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && delay < 0)
+	{
+		wireFrame = !wireFrame;
+		delay = 10;
+	}
+
+	if (wireFrame)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
